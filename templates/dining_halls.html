@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dining Halls</title>
+</head>
+<body>
+    {% for dining_hall, meals in dining_hall_data.items() %}
+        <h2>{{ dining_hall }}</h2>
+        <table border="1">
+            <tr>
+                <th>Meal</th>
+                <th>Allergens</th>
+            </tr>
+            {% for meal in meals %}
+                <tr>
+                    <td>{{ meal['name'] }}</td>
+                    <td>{{ meal['allergens']|join(', ') }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endfor %}
+</body>
+</html>
+
