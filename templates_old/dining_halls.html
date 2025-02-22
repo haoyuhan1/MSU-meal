@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MSU Dining Halls - Meal Info</title>
+    
+    <!-- Bootstrap for better styling -->
+    <link rel="stylesheet" 
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+        }
+        h2 {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        table {
+            width: 100%;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+        th {
+            background-color: #343a40;
+            color: white;
+        }
+        .search-box {
+            margin-bottom: 20px;
+        }
+        .text-muted {
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 class="text-center mt-3">MSU Dining Halls - Meal Info</h1>
+
+        <!-- Search Box -->
+        <input type="text" id="searchInput" class="form-control search-box" 
+               placeholder="Search for meals or allergens..." onkeyup="filterMeals()">
+
+        {% if dining_hall_data %}
+            {% for dining_hall, meals in dining_hall_data.items() %}
+                <h2>{{ dining_hall }}</h2>
+                <table class="table table-striped table-bordered meal-table">
+                    <thead>
+                        <tr>
+                            <th>Meal</th>
+                            <th>Allergens</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for meal in meals %}
+                            <tr class="meal-row">
+                                <td class="meal-name">{{ meal['name'] }}</td>
+                                <td class="meal-allergens">
+                                    {% if meal['allergens'] %}
+                                        {{ meal['allergens']|join(', ') }}
+                                    {% else %}
+                                        <span class="text-muted">None</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% endfor %}
+        {% else %}
+            <p class="text-center text-danger">No meal data available at the moment.</p>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JavaScript (Optional, for interactivity) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- JavaScript for Live Search -->
+    <script>
+        function filterMeals() {
+            let input = document.getElementById("searchInput").value.toLowerCase();
+            let tables = document.querySelectorAll(".meal-table");
+
+            tables.forEach(table => {
+                let rows = table.querySelectorAll(".meal-row");
+                let tableHasResults = false;
+
+                rows.forEach(row => {
+                    let mealName = row.querySelector(".meal-name").textContent.toLowerCase();
+                    let allergens = row.querySelector(".meal-allergens").textContent.toLowerCase();
+                    
+                    if (mealName.includes(input) || allergens.includes(input)) {
+                        row.style.display = "";
+                        tableHasResults = true;
+                    } else {
+                        row.style.display = "none";
+                    }
+                });
+
+                // Hide the table if no matching results are found
+                table.style.display = tableHasResults ? "" : "none";
+            });
+        }
+    </script>
+
+</body>
+</html>
+

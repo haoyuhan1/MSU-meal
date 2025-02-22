@@ -3,24 +3,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dining Halls</title>
+    <title>MSU Dining Halls - Meal Info</title>
+
+    <!-- Bootstrap for styling -->
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1000px;
+            margin: auto;
+        }
+        h2 {
+            background-color: #007bff;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        .venue-title {
+            font-size: 20px;
+            font-weight: bold;
+            color: #dc3545;
+            margin-top: 10px;
+        }
+        .chatgpt-box {
+            background-color: #ffefc2;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 5px solid #ff9800;
+        }
+        .table-container {
+            padding: 15px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            margin-top: 10px;
+        }
+        .search-box {
+            margin-bottom: 20px;
+            border-radius: 20px;
+            padding: 10px;
+        }
+        .btn-info {
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: 0.3s;
+        }
+        .btn-info:hover {
+            background-color: #0056b3;
+            color: white;
+        }
+        .update-status {
+            font-style: italic;
+            font-size: 14px;
+            color: #28a745;
+        }
+        .text-muted {
+            font-style: italic;
+        }
+        .toggle-icon {
+            float: right;
+            transition: transform 0.3s ease-in-out;
+        }
+        .collapsed .toggle-icon {
+            transform: rotate(180deg);
+        }
+    </style>
 </head>
 <body>
-    {% for dining_hall, meals in dining_hall_data.items() %}
-        <h2>{{ dining_hall }}</h2>
-        <table border="1">
-            <tr>
-                <th>Meal</th>
-                <th>Allergens</th>
-            </tr>
-            {% for meal in meals %}
-                <tr>
-                    <td>{{ meal['name'] }}</td>
-                    <td>{{ meal['allergens']|join(', ') }}</td>
-                </tr>
+
+    <div class="container">
+        <h1 class="text-center mt-3">MSU Dining Halls - Meal Info</h1>
+
+        <!-- ChatGPT Recommendation Box -->
+        <div class="chatgpt-box">
+            <h4>🍽️ ChatGPT's Top 3 Dining Hall Recommendations ({{ meal_type.capitalize() }}):</h4>
+            {% for hall in recommended_halls %}
+                <div class="mb-3">
+                    <h5><strong>{{ hall }}</strong></h5>
+                    <p>{{ hall_explanations[hall] | replace('**', '') | replace('Reason:', '<strong>Reason:</strong>') | safe }}</p>
+                </div>
             {% endfor %}
-        </table>
-    {% endfor %}
+        </div>
+
+        <!-- Force Update Button -->
+        <div class="container mt-3">
+            <button id="update-btn" class="btn btn-primary">🔄 Force Update</button>
+            <p id="update-status" class="update-status mt-2"></p>
+        </div>
+
+        <!-- Search Box -->
+        <input type="text" id="searchInput" class="form-control search-box"
+               placeholder="🔍 Search for meals or allergens..." onkeyup="filterMeals()">
+
+        <h3 class="text-center">🍽️ Currently Showing: {{ meal_type }} Menu</h3>
+
+        {% if dining_hall_data %}
+            {% for dining_hall, venues in dining_hall_data.items() %}
+                {% if venues %}
+                    <!-- Dining Hall Toggle Button -->
+                    <button class="btn btn-info w-100 text-start mt-3 collapsed" type="button"
+                            data-bs-toggle="collapse" data-bs-target="#hall-{{ loop.index }}"
+                            aria-expanded="false" aria-controls="hall-{{ loop.index }}">
+                        {{ dining_hall }} <span class="toggle-icon">▼</span>
+                    </button>
+
+                    <div class="collapse hall-collapse" id="hall-{{ loop.index }}">
+                        <div class="hall-container">
+                            {% for venue, meals in venues.items() %}
+                                {% if meals %}
+                                    <div class="table-container">
+                                        <p class="venue-title">{{ venue }}</p>
+                                        <table class="table table-striped table-bordered meal-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Meal</th>
+                                                    <th>Allergens</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {% for meal in meals %}
+                                                    <tr class="meal-row">
+                                                        <td class="meal-name">{{ meal['name'] }}</td>
+                                                        <td class="meal-allergens">
+                                                            {% if meal['allergens'] %}
+                                                                {{ meal['allergens']|join(', ') }}
+                                                            {% else %}
+                                                                <span class="text-muted">None</span>
+                                                            {% endif %}
+                                                        </td>
+                                                    </tr>
+                                                {% endfor %}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            <p class="text-center text-danger">No meal data available at the moment.</p>
+        {% endif %}
+    </div>
+
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        function forceUpdate() {
+            fetch("/force_update", { method: "POST" })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error("HTTP status " + response.status);
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById("update-status").innerText = data.message || data.error;
+
+                // Wait 2 seconds and force reload the page to load new data
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 10000);
+            })
+            .catch(error => {
+                document.getElementById("update-status").innerText = "Error: " + error.message;
+                console.error("Force Update Error:", error);
+            });
+        }
+
+        document.getElementById("update-btn").addEventListener("click", forceUpdate);
+
+    function filterMeals() {
+        let input = document.getElementById("searchInput").value.toLowerCase();
+        let halls = document.querySelectorAll(".hall-collapse");
+
+        halls.forEach(hall => {
+            let venues = hall.querySelectorAll(".table-container");
+            let hallHasResults = false;
+
+            venues.forEach(venue => {
+                let rows = venue.querySelectorAll(".meal-row");
+                let venueHasResults = false;
+
+                rows.forEach(row => {
+                    let mealName = row.querySelector(".meal-name").textContent.toLowerCase();
+                    let allergens = row.querySelector(".meal-allergens").textContent.toLowerCase();
+
+                    if (mealName.includes(input) || allergens.includes(input)) {
+                        row.style.display = "";
+                        venueHasResults = true;
+                    } else {
+                        row.style.display = "none";
+                    }
+                });
+
+                venue.style.display = venueHasResults ? "" : "none";
+                if (venueHasResults) hallHasResults = true;
+            });
+
+            if (input === "") {
+                hall.classList.remove("show"); // Collapse all if input is empty
+            } else {
+                if (hallHasResults) {
+                    hall.classList.add("show"); // Expand matching halls
+                } else {
+                    hall.classList.remove("show"); // Collapse non-matching halls
+                }
+            }
+        });
+    }
+ 
+    </script>
+
 </body>
 </html>
 
